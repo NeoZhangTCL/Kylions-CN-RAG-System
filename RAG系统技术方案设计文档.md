@@ -87,20 +87,111 @@ PDF文档 (7.7MB)
 
 ## 🔍 核心组件设计
 
+
+### 🔧 核心组件：RAGSystem主控制器
+
+`rag_system.py`是整个系统的核心控制器，封装了完整的RAG流程：
+
+```pseudocode
+class RAGSystem:
+    """
+    RAG System Main Controller
+    Encapsulates document processing and query workflow
+    """
+    
+    function __init__(config):
+        # Load configuration and initialize components
+        load_config(config)
+        init_components()
+        setup_system_state()
+    
+    function process_document(pdf_path):
+        """
+        Complete document processing pipeline:
+        Parse -> Chunk -> Vectorize -> Store
+        """
+        # 1. File validation
+        validate_file(pdf_path)
+        
+        # 2. PDF parsing
+        parsed_doc = parser.parse(pdf_path)
+        
+        # 3. Document chunking
+        chunks = chunker.chunk(parsed_doc)
+        
+        # 4. Vectorization
+        embeddings = embedder.embed([chunk.content for chunk in chunks])
+        for chunk, embedding in zip(chunks, embeddings):
+            chunk.embedding = embedding
+        
+        # 5. Store to vector database
+        retriever.add_documents(chunks)
+        
+        # 6. Update system state
+        update_system_state(chunks, pdf_path)
+        
+        return processing_statistics
+    
+    function query(question, top_k=3):
+        """
+        Query relevant document chunks
+        """
+        # 1. State validation
+        validate_system_ready()
+        
+        # 2. Query vectorization
+        query_embedding = embedder.embed([question])[0]
+        
+        # 3. Vector retrieval
+        results = retriever.search(query_embedding, top_k)
+        
+        # 4. Post-processing
+        filtered_results = post_process_results(results)
+        
+        return filtered_results
+    
+    # System management functions
+    function get_system_info()
+    function clear_database()
+    function update_config(new_config)
+```
+
+#### 主要功能模块
+
+1. **组件管理**
+   - 自动初始化所有子组件（解析器、分片器、向量化器、检索器）
+   - 配置验证和组件状态管理
+   - 支持动态配置更新
+
+2. **文档处理流程**
+   - 文件验证和错误处理
+   - 完整的处理管道：解析→分片→向量化→存储
+   - 处理统计和性能监控
+
+3. **查询接口**
+   - 状态验证和参数校验
+   - 查询向量化和相似度检索
+   - 结果过滤和后处理
+
+4. **系统状态管理**
+   - 文档处理状态跟踪
+   - 系统信息获取
+   - 数据库清理和重置
+
 ### 1. 多模态文档解析器
 
 #### 1.1 PDF到Markdown转换
 
-```python
+```pseudocode
 class MultiModalPDFParser:
-    def __init__(self):
-        self.text_extractor = PyMuPDF()
-        self.table_extractor = pdfplumber  
-        self.image_extractor = PyMuPDF()
+    initialize():
+        text_extractor = PyMuPDF_library
+        table_extractor = pdfplumber_library  
+        image_extractor = PyMuPDF_library
         
-    def parse_to_markdown(self, pdf_path):
+    function parse_to_markdown(pdf_path):
         """
-        将PDF转换为结构化Markdown
+        Convert PDF to structured Markdown
         """
         result = {
             'markdown_content': '',
@@ -109,59 +200,56 @@ class MultiModalPDFParser:
             'metadata': {}
         }
         
-        # 1. 提取文本结构
-        text_blocks = self.extract_structured_text()
+        # 1. Extract text structure
+        text_blocks = extract_structured_text()
         
-        # 2. 识别并提取表格
-        tables = self.extract_tables()
+        # 2. Identify and extract tables
+        tables = extract_tables()
         
-        # 3. 提取并描述图片
-        images = self.extract_and_describe_images()
+        # 3. Extract and describe images
+        images = extract_and_describe_images()
         
-        # 4. 合并为Markdown格式
-        markdown = self.merge_to_markdown(text_blocks, tables, images)
+        # 4. Merge to Markdown format
+        markdown = merge_to_markdown(text_blocks, tables, images)
         
         return result
 ```
 
 #### 1.2 图片处理策略
 
-```python
+```pseudocode
 class ImageProcessor:
-    def __init__(self):
-        # 使用开源图片描述模型
-        self.image_captioner = pipeline(
-            "image-to-text", 
-            model="Salesforce/blip2-opt-2.7b"
-        )
+    initialize():
+        # Use open-source image captioning model
+        image_captioner = image_description_AI_model("Salesforce/blip2-opt-2.7b")
     
-    def process_image(self, image_data, page_num, image_index):
+    function process_image(image_data, page_num, image_index):
         """
-        处理单张图片：保存 + 生成描述
+        Process single image: save + generate description
         """
-        # 1. 保存图片
+        # 1. Save image
         image_path = f"images/page_{page_num}_img_{image_index}.png"
         image_data.save(image_path)
         
-        # 2. 生成描述
-        description = self.image_captioner(image_data)[0]['generated_text']
+        # 2. Generate description
+        description = image_captioner.generate_description(image_data)
         
-        # 3. 返回Markdown格式
-        return f"![{description}]({image_path})\n\n**图片描述**: {description}\n"
+        # 3. Return Markdown format
+        return f"![{description}]({image_path})\n\n**Image Description**: {description}\n"
 ```
 
 #### 1.3 表格处理策略
 
-```python
+```pseudocode
 class TableProcessor:
-    def extract_table_to_markdown(self, table_data, context_before, context_after):
+    function extract_table_to_markdown(table_data, context_before, context_after):
         """
-        将表格转换为Markdown格式，保留上下文
+        Convert table to Markdown format, preserve context
         """
-        # 1. 转换为Markdown表格
-        markdown_table = self.dataframe_to_markdown(table_data)
+        # 1. Convert to Markdown table
+        markdown_table = convert_to_markdown_table(table_data)
         
-        # 2. 添加上下文信息
+        # 2. Add context information
         result = f"""
 {context_before}
 
@@ -176,66 +264,66 @@ class TableProcessor:
 
 #### 2.1 混合分片策略
 
-```python
+```pseudocode
 class HybridChunker:
-    def __init__(self):
-        self.max_chunk_size = 500  # 中文字符
-        self.overlap = 50
-        self.preserve_elements = True
+    initialize():
+        max_chunk_size = 500  # Chinese characters
+        overlap_size = 50
+        preserve_elements = True
         
-    def chunk_markdown(self, markdown_content):
+    function chunk_markdown(markdown_content):
         """
-        混合分片策略：层级 + 递归
+        Hybrid chunking strategy: hierarchical + recursive
         """
         chunks = []
         
-        # 1. 按标题层级预分割
-        sections = self.split_by_headers(markdown_content)
+        # 1. Pre-split by heading levels
+        sections = split_by_headers(markdown_content)
         
         for section in sections:
-            if self.is_oversized(section):
-                # 大章节：递归分割，保持表格/图片完整
-                sub_chunks = self.recursive_split_preserve_elements(section)
+            if is_oversized(section):
+                # Large sections: recursive split, keep tables/images intact
+                sub_chunks = recursive_split_preserve_elements(section)
                 chunks.extend(sub_chunks)
             else:
-                # 小章节：直接作为一个chunk
-                chunks.append(self.create_chunk(section))
+                # Small sections: directly as one chunk
+                chunks.append(create_chunk(section))
                 
         return chunks
     
-    def recursive_split_preserve_elements(self, text):
+    function recursive_split_preserve_elements(text):
         """
-        递归分割，保护表格和图片不被截断
+        Recursive split, protect tables and images from truncation
         """
-        # 识别保护区域
-        protected_ranges = self.find_protected_elements(text)
+        # Identify protected areas
+        protected_ranges = find_protected_elements(text)
         
-        # 在安全位置分割
-        return self.safe_split(text, protected_ranges)
+        # Split at safe positions
+        return safe_split(text, protected_ranges)
 ```
 
 #### 2.2 元数据设计
 
-```python
+```pseudocode
 class ChunkMetadata:
     """
-    丰富的chunk元数据设计
+    Rich chunk metadata design
     """
-    def create_metadata(self, chunk_content, section_info):
+    function create_metadata(chunk_content, section_info):
         return {
             "chunk_id": f"section_{section_info.level}_{section_info.index}",
             "section_hierarchy": section_info.hierarchy,  # ["1", "1.2", "1.2.1"]
             "section_title": section_info.title,
             "parent_section": section_info.parent,
             "page_range": [section_info.start_page, section_info.end_page],
-            "content_types": self.analyze_content_types(chunk_content),
+            "content_types": analyze_content_types(chunk_content),
             "element_counts": {
-                "tables": self.count_tables(chunk_content),
-                "images": self.count_images(chunk_content),
+                "tables": count_tables(chunk_content),
+                "images": count_images(chunk_content),
                 "text_length": len(chunk_content)
             },
-            "cross_references": self.extract_references(chunk_content),
-            "keywords": self.extract_keywords(chunk_content)
+            "cross_references": extract_references(chunk_content),
+            "keywords": extract_keywords(chunk_content)
         }
 ```
 
@@ -243,51 +331,51 @@ class ChunkMetadata:
 
 #### 3.1 Qdrant集成
 
-```python
+```pseudocode
 class QdrantRetriever:
-    def __init__(self):
-        self.client = QdrantClient(":memory:")  # 内存模式
-        self.collection_name = "kylinos_docs"
+    initialize():
+        client = QdrantClient(":memory:")  # Memory mode
+        collection_name = "kylinos_docs"
         
-    def setup_collection(self):
+    function setup_collection():
         """
-        创建向量集合
+        Create vector collection
         """
-        self.client.create_collection(
-            collection_name=self.collection_name,
-            vectors_config=models.VectorParams(
-                size=1024,  # BGE模型维度
-                distance=models.Distance.COSINE
-            )
+        client.create_collection(
+            collection_name=collection_name,
+            vectors_config={
+                size=1024,  # BGE model dimension
+                distance=cosine_distance
+            }
         )
     
-    def add_documents(self, chunks):
+    function add_documents(chunks):
         """
-        批量添加文档块
+        Batch add document chunks
         """
         points = []
-        for i, chunk in enumerate(chunks):
-            points.append(models.PointStruct(
-                id=i,
+        for index, chunk in enumerate(chunks):
+            points.append({
+                id=index,
                 vector=chunk.embedding,
                 payload={
                     "content": chunk.content,
                     "metadata": chunk.metadata
                 }
-            ))
+            })
         
-        self.client.upsert(
-            collection_name=self.collection_name,
+        client.upsert(
+            collection_name=collection_name,
             points=points
         )
     
-    def search(self, query_embedding, top_k=3):
+    function search(query_vector, top_k=3):
         """
-        相似度检索
+        Similarity retrieval
         """
-        search_result = self.client.search(
-            collection_name=self.collection_name,
-            query_vector=query_embedding,
+        search_result = client.search(
+            collection_name=collection_name,
+            query_vector=query_vector,
             limit=top_k,
             with_payload=True
         )
@@ -304,24 +392,24 @@ class QdrantRetriever:
 
 #### 3.2 混合检索策略
 
-```python
+```pseudocode
 class HybridSearchEngine:
-    def __init__(self):
-        self.vector_retriever = QdrantRetriever()
-        self.keyword_retriever = BM25Retriever()  # 关键词检索
+    initialize():
+        vector_retriever = QdrantRetriever()
+        keyword_retriever = BM25Retriever()  # Keyword retrieval
         
-    def search(self, query, top_k=3):
+    function search(query, top_k=3):
         """
-        多策略融合检索
+        Multi-strategy fusion retrieval
         """
-        # 1. 向量检索
-        vector_results = self.vector_retriever.search(query, top_k*2)
+        # 1. Vector retrieval
+        vector_results = vector_retriever.search(query, top_k*2)
         
-        # 2. 关键词检索（特别适合表格内容）
-        keyword_results = self.keyword_retriever.search(query, top_k*2)
+        # 2. Keyword retrieval (especially suitable for table content)
+        keyword_results = keyword_retriever.search(query, top_k*2)
         
-        # 3. 结果融合与重排序
-        final_results = self.rank_fusion(vector_results, keyword_results)
+        # 3. Result fusion and reranking
+        final_results = rank_fusion(vector_results, keyword_results)
         
         return final_results[:top_k]
 ```
@@ -358,6 +446,7 @@ class HybridSearchEngine:
 ```text
 rag_kylinos/
 ├── src/
+│   ├── rag_system.py              # 🔧 RAG系统主控制器
 │   ├── parsers/
 │   │   ├── pdf_parser.py          # PDF解析器
 │   │   ├── image_processor.py     # 图片处理器
@@ -370,6 +459,12 @@ rag_kylinos/
 │   │   └── hybrid_search.py       # 混合检索引擎
 │   ├── embeddings/
 │   │   └── bge_embedder.py        # BGE向量化器
+│   ├── model/
+│   │   ├── document_models.py     # 文档数据模型
+│   │   ├── search_models.py       # 检索结果模型
+│   │   └── config_models.py       # 配置数据模型
+│   ├── config.py                  # 配置管理
+│   ├── exceptions.py              # 异常定义
 │   └── utils/
 │       ├── quality_checker.py     # 质量检查
 │       └── markdown_utils.py      # Markdown工具
@@ -407,3 +502,30 @@ rag_kylinos/
 - ✅ **可扩展设计**：便于后续功能扩展和性能优化
 
 该方案在面试场景中展现了对RAG技术的深入理解，同时保证了实现的可行性和效果的可验证性。
+
+## 📊 项目实现状态
+
+### 已实现功能
+
+- [x] RAG系统主控制器
+- [x] 简单PDF文本解析器
+- [x] 简单重叠分片器  
+- [x] BGE中文向量化器
+- [x] Qdrant向量存储
+- [x] 向量相似度检索
+- [x] CLI命令行界面
+- [x] 配置管理系统
+- [x] 测试套件
+
+### 待实现功能
+
+- [ ] 多模态PDF解析器（图片+表格）
+- [ ] 图片描述生成器
+- [ ] 智能表格提取
+- [ ] 混合分片策略（层级+递归）
+- [ ] 高级元数据生成
+- [ ] BM25关键词检索
+- [ ] 混合检索引擎
+- [ ] 查询优化
+- [ ] Web用户界面
+- [ ] 性能优化
