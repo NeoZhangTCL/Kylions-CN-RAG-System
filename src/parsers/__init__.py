@@ -3,15 +3,19 @@
 提供PDF文档解析的接口定义
 """
 
-from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Union
-from ..model import ParsedDocument
+from typing import Protocol, List, Dict, Any, Union
+
+# 导入数据模型
+try:
+    from ..model import ParsedDocument
+except ImportError:
+    # 如果相对导入失败，尝试绝对导入
+    from src.model import ParsedDocument
 
 
-class DocumentParser(ABC):
-    """文档解析器基类接口"""
+class DocumentParser(Protocol):
+    """文档解析器协议接口 - 使用 Protocol 实现结构化子类型"""
     
-    @abstractmethod
     def parse(self, document_path: str) -> ParsedDocument:
         """
         解析文档，返回结构化数据
@@ -22,13 +26,16 @@ class DocumentParser(ABC):
         Returns:
             ParsedDocument: 解析后的文档数据
         """
-        pass
+        ...
 
 
-class ImageProcessor(ABC):
-    """图片处理器接口"""
+# 导入具体实现
+from .simple_pdf_parser import SimplePDFParser
+
+
+class ImageProcessor(Protocol):
+    """图片处理器协议接口"""
     
-    @abstractmethod
     def process_image(self, image_data: bytes, page_num: int, image_index: int) -> Dict[str, Any]:
         """
         处理单张图片：保存 + 生成描述
@@ -41,13 +48,12 @@ class ImageProcessor(ABC):
         Returns:
             Dict[str, Any]: 图片处理结果，包含路径、描述等信息
         """
-        pass
+        ...
 
 
-class TableProcessor(ABC):
-    """表格处理器接口"""
+class TableProcessor(Protocol):
+    """表格处理器协议接口"""
     
-    @abstractmethod
     def extract_table_to_markdown(self, table_data: Any, context_before: str, context_after: str) -> str:
         """
         将表格转换为Markdown格式，保留上下文
@@ -60,4 +66,13 @@ class TableProcessor(ABC):
         Returns:
             str: Markdown格式的表格
         """
-        pass
+        ...
+
+
+# 导出公共接口
+__all__ = [
+    'DocumentParser',      # 文档解析器协议
+    'SimplePDFParser',     # 简单PDF解析器实现
+    'ImageProcessor',      # 图片处理器协议
+    'TableProcessor',      # 表格处理器协议
+]

@@ -172,7 +172,7 @@ $RECYCLE.BIN/
 *~
 
 # RAG/AI specific
-data/
+processed/
 logs/
 checkpoints/
 models/

@@ -3,15 +3,14 @@
 提供文档分片处理的接口定义
 """
 
-from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Optional
+from typing import Protocol, List, Dict, Any, Optional, runtime_checkable
 from ..model import ParsedDocument, DocumentChunk
 
 
-class DocumentChunker(ABC):
-    """文档分片器基类接口"""
+@runtime_checkable
+class DocumentChunker(Protocol):
+    """文档分片器协议接口"""
     
-    @abstractmethod
     def chunk(self, document: ParsedDocument) -> List[DocumentChunk]:
         """
         将文档分片
@@ -22,30 +21,12 @@ class DocumentChunker(ABC):
         Returns:
             List[DocumentChunk]: 文档分片列表
         """
-        pass
+        ...
 
 
-class HybridChunker(DocumentChunker):
-    """混合分片策略实现接口"""
+class MetadataGenerator(Protocol):
+    """元数据生成器协议接口"""
     
-    @abstractmethod
-    def chunk_markdown(self, markdown_content: str) -> List[DocumentChunk]:
-        """
-        混合分片策略：层级 + 递归
-        
-        Args:
-            markdown_content: Markdown内容
-            
-        Returns:
-            List[DocumentChunk]: 分片结果
-        """
-        pass
-
-
-class MetadataGenerator(ABC):
-    """元数据生成器接口"""
-    
-    @abstractmethod
     def generate_metadata(self, chunk_content: str, section_info: Dict[str, Any]) -> Dict[str, Any]:
         """
         为文档分片生成元数据
@@ -57,4 +38,16 @@ class MetadataGenerator(ABC):
         Returns:
             Dict[str, Any]: 生成的元数据
         """
-        pass
+        ...
+
+
+# 导入具体实现
+from .simple_overlap_chunker import SimpleOverlapChunker
+
+# 导出公共接口
+__all__ = [
+    'DocumentChunker',       # 文档分片器协议
+    'HybridChunker',         # 混合分片策略协议
+    'MetadataGenerator',     # 元数据生成器协议
+    'SimpleOverlapChunker',  # 简单重叠分片器
+]
