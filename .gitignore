@@ -200,3 +200,17 @@ faiss_index/
 temp/
 tmp/
 *.tmp
+
+# uv package manager
+# Note: uv.lock should be committed to version control (like package-lock.json)
+# .venv/ is already ignored above (line 106)
+
+# uv cache and temporary files (if any appear in project directory)
+.uv_cache/
+uv_cache/
+*.uv-lock.tmp
+
+# uv build artifacts and temporary directories
+.uv/
+__uv_cache__/
+

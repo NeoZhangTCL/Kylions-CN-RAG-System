@@ -33,114 +33,157 @@
 
 ### 1. 环境准备
 
+本项目使用现代Python包管理器 **uv**，提供10-100倍更快的依赖解析和安装体验。
+
 ```bash
-# 激活虚拟环境
-source .venv/bin/activate
+# 安装 uv（如未安装）
+curl -LsSf https://astral.sh/uv/install.sh | sh  # macOS/Linux
+# 或使用: pip install uv
+# 或使用: brew install uv
+
+# 快速环境设置
+uv sync                    # 安装所有依赖并创建虚拟环境
 
 # 确保PDF文档在正确位置
-ls data/raw/kylions_handle_book.pdf
+ls data/raw/kylinos_handle_book.pdf
 ```
 
 ### 2. 智能问答（推荐）
 
 ```bash
-# 🌟 一步完成：处理文档并查询（推荐方式）
-python main.py ask data/raw/kylions_handle_book.pdf "如何安装软件?"
+# 🌟 一步完成：处理文档并查询（无需激活环境）
+uv run python main.py ask data/raw/kylions_handle_book.pdf "如何安装软件?"
 
 # 查询其他问题
-python main.py ask data/raw/kylions_handle_book.pdf "麒麟系统有什么特点?"
+uv run python main.py ask data/raw/kylions_handle_book.pdf "麒麟系统有什么特点?"
 ```
 
-### 3. 分步处理（可选）
+### 3. 交互模式（持续查询）
 
 ```bash
-# 先处理PDF文档
-python main.py process data/raw/kylions_handle_book.pdf
+# 进入交互模式，自动处理文档
+uv run python main.py interactive --auto-load
 
-# 然后查询（注意：仅在同一会话中有效，重启程序需重新处理）
-python main.py query "如何安装软件?"
-
-# 或使用交互模式
-python main.py interactive
+# 或手动进入交互模式
+uv run python main.py interactive
+# 然后在交互界面中处理文档和查询
 ```
 
+> 💡 **重要说明**：系统使用内存向量数据库，每次程序重启后需要重新处理文档。推荐使用 `ask` 命令或 `interactive` 模式。
+
 ## 📖 详细使用指南
+
+### 🔧 uv 项目管理
+
+#### 项目管理
+
+```bash
+# 安装所有依赖
+uv sync
+
+# 仅安装生产依赖
+uv sync --no-dev
+
+# 更新所有依赖
+uv sync --upgrade
+
+# 查看项目信息
+uv tree                # 依赖树
+uv pip list           # 已安装的包
+```
+
+#### 依赖管理
+
+```bash
+# 添加新的生产依赖
+uv add requests
+
+# 添加开发依赖
+uv add --dev black
+
+# 移除依赖
+uv remove requests
+
+# 查看过期依赖
+uv pip list --outdated
+```
+
+#### 运行和测试
+
+```bash
+# 运行主程序（无需激活环境）
+uv run python main.py ask data/raw/kylions_handle_book.pdf "如何安装软件?"
+
+# 运行测试
+uv run pytest
+
+# 运行测试（带覆盖率）
+uv run pytest --cov=src
+
+# 代码格式化
+uv run black src/
+uv run isort src/
+```
 
 ### 命令行选项
 
 ```bash
 # 查看帮助
-python main.py --help
+uv run python main.py --help
 
 # 使用自定义配置文件
-python main.py --config config.yaml process data/raw/kylions_handle_book.pdf
+uv run python main.py --config config.yaml ask data/raw/kylions_handle_book.pdf "如何安装软件?"
 
 # 设置日志级别
-python main.py --log-level DEBUG query "系统升级"
+uv run python main.py --log-level DEBUG ask data/raw/kylions_handle_book.pdf "系统升级"
 ```
 
 ### 主要命令
 
-#### 1. process - 处理PDF文档
-```bash
-# 基本用法
-python main.py process data/raw/kylions_handle_book.pdf
+#### 1. ask - 智能问答（🌟推荐）
 
-# 自定义分片参数
-python main.py process data/raw/kylions_handle_book.pdf --chunk-size 800 --overlap 100
-```
-
-#### 2. query - 查询文档
-```bash
-# 基本查询
-python main.py query "如何安装软件?"
-
-# 返回更多结果
-python main.py query "系统升级" --top-k 5
-
-# 设置相似度阈值
-python main.py query "麒麟系统特点" --min-score 0.5
-```
-
-#### 3. ask - 智能问答（🌟推荐）
 ```bash
 # 基本用法：一步完成处理和查询
-python main.py ask data/raw/kylinos_handle_book.pdf "如何安装软件?"
+uv run python main.py ask data/raw/kylions_handle_book.pdf "如何安装软件?"
 
 # 返回更多结果
-python main.py ask data/raw/kylinos_handle_book.pdf "系统特点" --top-k 5
+uv run python main.py ask data/raw/kylions_handle_book.pdf "系统特点" --top-k 5
 
 # 自定义分片参数
-python main.py ask data/raw/kylinos_handle_book.pdf "安装步骤" --chunk-size 800 --overlap 100
+uv run python main.py ask data/raw/kylions_handle_book.pdf "安装步骤" --chunk-size 800 --overlap 100
 ```
 
-#### 4. interactive - 交互模式
+#### 2. interactive - 交互模式
+
 ```bash
 # 进入交互模式
-python main.py interactive
+uv run python main.py interactive
 
 # 自动加载默认文档
-python main.py interactive --auto-load
+uv run python main.py interactive --auto-load
 ```
 
-#### 5. info - 查看系统信息
+#### 3. info - 查看系统信息
+
 ```bash
 # 基本信息
-python main.py info
+uv run python main.py info
 
 # 详细信息
-python main.py info --detailed
+uv run python main.py info --detailed
 ```
 
-#### 6. clear - 清空数据库
+#### 4. clear - 清空数据库
+
 ```bash
 # 清空向量数据库
-python main.py clear --confirm
+uv run python main.py clear --confirm
 ```
 
 ### 交互模式使用
 
 在交互模式下：
+
 - 直接输入问题进行查询
 - 输入 `info` 查看系统状态
 - 输入 `help` 获取帮助
@@ -187,12 +230,54 @@ query:
 使用自定义配置：
 
 ```bash
-python main.py --config config.yaml process data/raw/kylions_handle_book.pdf
+uv run python main.py --config config.yaml ask data/raw/kylions_handle_book.pdf "如何安装软件?"
 ```
+
+### 📦 依赖配置（pyproject.toml）
+
+项目使用 `pyproject.toml` 管理依赖，分为以下类别：
+
+#### 🎯 生产依赖（核心功能）
+
+```toml
+dependencies = [
+    "sentence-transformers>=2.0.0",  # 中文语义向量化
+    "qdrant-client>=1.0.0",         # 向量数据库
+    "PyMuPDF>=1.20.0",              # PDF解析
+    "loguru>=0.7.0",                # 结构化日志
+    "pydantic>=2.0.0",              # 数据验证
+    "PyYAML>=6.0",                  # 配置解析
+]
+```
+
+#### 🧪 开发依赖（可选）
+
+```toml
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",        # 测试框架
+    "pytest-cov>=4.0.0",    # 测试覆盖率
+    "black>=23.0.0",         # 代码格式化
+    "isort>=5.0.0",          # import排序
+    "flake8>=6.0.0",         # 代码检查
+]
+```
+
+#### 📊 uv vs pip 性能对比
+
+| 特性 | uv | pip |
+|------|----|----|
+| 依赖解析速度 | 🚀 10-100x 更快 | 标准 |
+| 安装速度 | ⚡ 2-10x 更快 | 标准 |
+| 锁文件 | ✅ uv.lock | ❌ 需要pip-tools |
+| 缓存管理 | ✅ 全局缓存 | ✅ 基础缓存 |
+| Python版本管理 | ✅ 内置 | ❌ 需要pyenv |
+| 虚拟环境 | ✅ 内置 | ❌ 需要venv |
 
 ## 📊 处理效果
 
 ### 处理统计
+
 - **文档页数**：156页
 - **生成分片**：约123个
 - **总字符数**：约61,000字符
@@ -200,6 +285,7 @@ python main.py --config config.yaml process data/raw/kylions_handle_book.pdf
 - **向量维度**：1024维
 
 ### 查询效果
+
 - **查询延迟**：通常<1秒
 - **相似度范围**：0.0-1.0
 - **建议阈值**：0.3以上为相关内容
@@ -207,22 +293,28 @@ python main.py --config config.yaml process data/raw/kylions_handle_book.pdf
 ## ❓ 常见问题
 
 ### Q1: 查询提示"请先处理文档"
+
 **A**: 系统使用内存模式的向量数据库，每次重启程序需要重新处理PDF文档。  
 **💡 推荐解决方案**: 使用 `ask` 命令一步完成处理和查询：
+
 ```bash
-python main.py ask data/raw/kylinos_handle_book.pdf "你的问题"
+uv run python main.py ask data/raw/kylinos_handle_book.pdf "你的问题"
 ```
 
 ### Q2: 找不到相关结果
+
 **A**: 尝试：
+
 - 使用不同的关键词
 - 降低相似度阈值 `--min-score 0.2`
 - 增加返回结果数 `--top-k 10`
 
 ### Q3: 处理速度慢
+
 **A**: 首次加载BGE模型需要时间，后续查询会很快。
 
 ### Q4: 内存使用高
+
 **A**: BGE模型约占用1.3GB内存，这是正常的。
 
 ## 🛠️ 系统架构
@@ -293,6 +385,18 @@ PDF文档 → 文本解析 → 智能分片 → 向量化 → Qdrant存储
 - **📚 扩展设计**: 支持RAG适配性评估和模板生成
 - **🛠️ 工程质量**: 完整的项目结构和文档体系
 
+### ⚡ 现代化工具链
+
+项目采用 **uv** 作为包管理器，带来显著提升：
+
+- ⚡ **10-100倍**的依赖解析速度
+- 🚀 **2-10倍**的安装速度  
+- 🔒 **精确的版本锁定**（uv.lock）
+- 🎯 **清洁的依赖管理**（仅保留直接依赖）
+- 🛠️ **现代化的工具链**（内置虚拟环境、Python版本管理）
+
+> 💡 **快速体验**: `uv run python main.py ask data/raw/kylinos_handle_book.pdf "如何安装软件?"`
+>
 > 📋 **符合要求**: 系统完全满足[面试技术考察要求](./面试者代码提供要求.md)，可直接用于麒麟操作系统手册的智能检索。
 
 **🚀 系统已就绪，可进行实际业务应用！**

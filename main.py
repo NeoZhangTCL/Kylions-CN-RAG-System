@@ -35,10 +35,9 @@ def main():
     parser = argparse.ArgumentParser(
         description="麒麟操作系统手册RAG检索系统",
         epilog="使用示例:\n"
-               "  python main.py process data/raw/kylinos_handle_book.pdf\n"
-               "  python main.py query '如何安装软件?'\n"
-               "  python main.py ask data/raw/kylinos_handle_book.pdf '如何安装软件?'\n"
-               "  python main.py interactive",
+               "  uv run python main.py ask data/raw/kylions_handle_book.pdf '如何安装软件?'\n"
+               "  uv run python main.py interactive --auto-load\n"
+               "  uv run python main.py info",
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
     
@@ -57,18 +56,7 @@ def main():
     # 添加子命令
     subparsers = parser.add_subparsers(dest='command', help='可用命令')
     
-    # process命令：处理PDF文档
-    process_parser = subparsers.add_parser('process', help='处理PDF文档')
-    process_parser.add_argument('pdf_path', help='PDF文件路径')
-    process_parser.add_argument('--chunk-size', type=int, help='分片大小 (覆盖配置文件)')
-    process_parser.add_argument('--overlap', type=int, help='重叠大小 (覆盖配置文件)')
-    
-    # query命令：查询文档
-    query_parser = subparsers.add_parser('query', help='查询文档内容')
-    query_parser.add_argument('question', help='查询问题')
-    query_parser.add_argument('--top-k', type=int, default=3, help='返回结果数量')
-    query_parser.add_argument('--min-score', type=float, help='最小相似度阈值')
-    
+
     # interactive命令：交互模式
     interactive_parser = subparsers.add_parser('interactive', help='交互查询模式')
     interactive_parser.add_argument('--auto-load', action='store_true', help='自动加载默认文档')
@@ -136,11 +124,7 @@ def main():
         print("✅ RAG系统初始化完成\n")
         
         # 执行对应命令
-        if args.command == 'process':
-            handle_process_command(rag_system, args)
-        elif args.command == 'query':
-            handle_query_command(rag_system, args)
-        elif args.command == 'ask':
+        if args.command == 'ask':
             handle_ask_command(rag_system, args)
         elif args.command == 'interactive':
             handle_interactive_mode(rag_system, args)
@@ -161,62 +145,6 @@ def main():
             traceback.print_exc()
         sys.exit(1)
 
-
-def handle_process_command(rag_system: RAGSystem, args):
-    """处理process命令"""
-    print(f"📄 开始处理PDF文档: {args.pdf_path}")
-    print("⏳ 处理中，请稍候...\n")
-    
-    try:
-        result = rag_system.process_document(args.pdf_path)
-        
-        print("🎉 文档处理完成!")
-        print(f"  📁 文档路径: {result['document_path']}")
-        print(f"  📑 处理页数: {result['pages_processed']}")
-        print(f"  🧩 分片数量: {result['chunks_created']}")
-        print(f"  📝 总字符数: {result['total_characters']:,}")
-        print(f"  ⏱️  处理时间: {result['processing_time']}")
-        print("  ✅ 已建立向量索引，可以开始查询")
-        
-    except DocumentProcessingError as e:
-        print(f"❌ 文档处理失败: {e}")
-        sys.exit(1)
-
-
-def handle_query_command(rag_system: RAGSystem, args):
-    """处理query命令"""
-    print(f"🔍 查询问题: {args.question}")
-    print("⏳ 搜索中...\n")
-    
-    try:
-        results = rag_system.query(args.question, args.top_k)
-        
-        if not results:
-            print("😔 未找到相关内容")
-            print("💡 建议:")
-            print("  - 尝试使用不同的关键词")
-            print("  - 检查是否已正确处理文档")
-            return
-        
-        print(f"📋 查询结果 (共找到 {len(results)} 条相关内容):\n")
-        
-        for i, result in enumerate(results, 1):
-            print(f"【结果 {i}】(相似度: {result.score:.3f})")
-            print(f"{result.content}")
-            
-            # 显示元数据信息
-            if result.metadata:
-                chunk_info = result.metadata.get('chunk_index', '未知')
-                source = result.metadata.get('source_document', 
-                        result.metadata.get('file_name', '未知来源'))
-                print(f"  📍 来源: {Path(source).name if source else '未知'} - 分片 {chunk_info}")
-            
-            if i < len(results):
-                print("-" * 60)
-        
-    except QueryError as e:
-        print(f"❌ 查询失败: {e}")
-        sys.exit(1)
 
 
 def handle_ask_command(rag_system: RAGSystem, args):
@@ -282,7 +210,7 @@ def handle_interactive_mode(rag_system: RAGSystem, args):
         
         # 如果启用自动加载
         if args.auto_load:
-            default_pdf = "data/raw/kylinos_handle_book.pdf"
+            default_pdf = "data/raw/kylions_handle_book.pdf"
             if Path(default_pdf).exists():
                 print(f"🔄 正在自动加载: {default_pdf}")
                 try:
@@ -290,11 +218,11 @@ def handle_interactive_mode(rag_system: RAGSystem, args):
                     print("✅ 文档加载完成")
                 except Exception as e:
                     print(f"❌ 自动加载失败: {e}")
-                    print("💡 请先使用 'process' 命令处理PDF文档")
+                    print("💡 请使用 'uv run python main.py ask' 命令进行查询")
             else:
-                print("💡 请先使用 'process' 命令处理PDF文档")
+                print("💡 默认PDF文件不存在，请使用 'uv run python main.py ask' 命令")
         else:
-            print("💡 请先使用 'process' 命令处理PDF文档")
+            print("💡 需要处理文档才能查询，请使用 '--auto-load' 选项或 'ask' 命令")
     
     print()  # 空行
     
